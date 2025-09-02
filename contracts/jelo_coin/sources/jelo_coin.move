@@ -13,8 +13,10 @@ use sui::url::new_unsafe_from_bytes;
 
 public struct JELO has drop {}
 
-const TOTAL_SUPPLY: u64 = 1_000_000_000_000_000_000;
-
+// const TOTAL_SUPPLY: u64 = 1_000_000_000_000_000_000;
+const COMMUNITY_SUPPLY: u64 = 700_000_000_000_000_000;
+const CE_SUPPLY: u64 = 200_000_000_000_000_000;
+const OPERATION_SUPPLY: u64 = 100_000_000_000_000_000;
 
 
 fun init(otw: JELO, ctx: &mut TxContext) {
@@ -28,7 +30,9 @@ fun init(otw: JELO, ctx: &mut TxContext) {
         ctx
     );
 
-    mint(&mut treasury, TOTAL_SUPPLY, ctx.sender(), ctx);
+    mint(&mut treasury, COMMUNITY_SUPPLY, @jelo_community, ctx);
+    mint(&mut treasury, CE_SUPPLY, @jelo_ce, ctx);
+    mint(&mut treasury, OPERATION_SUPPLY, ctx.sender(), ctx);
 
 
     transfer::public_freeze_object(metadata);
