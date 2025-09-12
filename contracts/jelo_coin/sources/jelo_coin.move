@@ -197,3 +197,185 @@ fun test_init() {
 
     scenario.end();
 }
+
+
+#[test]
+fun test_lock_coins(){
+    let publisher = @0x11;
+    let bob = @0xB;
+
+    let mut scenario = test_scenario::begin(publisher);
+    {
+        let otw = JELO{};
+        init(otw, scenario.ctx());
+    };
+
+    scenario.next_tx(publisher);
+    {
+        let mut mint_cap = scenario.take_from_sender<MintCapability>();
+        let duration = 5000;
+        let test_clock = clock::create_for_testing(scenario.ctx());
+
+
+        mint_locked(
+            &mut mint_cap,
+            100_000_000_000_000_000,
+            bob,
+            duration,
+            &test_clock,
+            scenario.ctx()
+        );
+
+        assert!(mint_cap.total_minted == TOTAL_SUPPLY, EInvalidAmount);
+        scenario.return_to_sender(mint_cap);
+        test_clock.destroy_for_testing();
+    };
+
+
+    scenario.next_tx(bob);
+    {
+        let locker = scenario.take_from_sender<Locker>();
+        let duration = 5000;
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(duration);
+
+
+        let amount = withdraw_locked(locker, &test_clock, scenario.ctx());
+        assert!(amount == 100_000_000_000_000_000, EInvalidAmount);
+        // scenario.return_to_sender(locker);
+        test_clock.destroy_for_testing();
+    };
+
+    scenario.next_tx(bob);
+    {
+        let coin = scenario.take_from_sender<coin::Coin<JELO>>();
+        assert!(coin.balance().value() == 100_000_000_000_000_000, EInvalidAmount);
+
+        scenario.return_to_sender(coin);
+    };
+
+    scenario.end();
+}
+
+
+#[test]
+#[expected_failure(abort_code = ESupplyExcided)]
+fun test_overflow(){
+
+    let publisher = @0x11;
+    let bob = @0xB;
+
+    let mut scenario = test_scenario::begin(publisher);
+    {
+        let otw = JELO{};
+        init(otw, scenario.ctx());
+
+    };
+
+    scenario.next_tx(publisher);
+    {
+        let mut mint_cap = scenario.take_from_sender<MintCapability>();
+        let duration = 5000;
+        let test_clock = clock::create_for_testing(scenario.ctx());
+
+
+        mint_locked(
+            &mut mint_cap,
+            100_000_000_000_000_001,
+            bob,
+            duration,
+            &test_clock,
+            scenario.ctx()
+        );
+        assert!(mint_cap.total_minted == TOTAL_SUPPLY, EInvalidAmount);
+        scenario.return_to_sender(mint_cap);
+        test_clock.destroy_for_testing();
+    };
+
+    scenario.end();
+}
+
+
+#[test]
+#[expected_failure(abort_code = ESupplyExcided)]
+fun test_mint_overflow(){
+
+    let publisher = @0x11;
+
+    let mut scenario = test_scenario::begin(publisher);
+    {
+        let otw = JELO{};
+        init(otw, scenario.ctx());
+
+    };
+
+    scenario.next_tx(publisher);
+    {
+        let mut mint_cap = scenario.take_from_sender<MintCapability>();
+
+
+        mint(
+            &mut mint_cap,
+            100_000_000_000_000_001,
+            scenario.ctx().sender(),
+            scenario.ctx()
+        );
+
+        scenario.return_to_sender(mint_cap);
+    };
+
+    scenario.end();
+}
+
+
+
+#[test]
+#[expected_failure(abort_code = ETokenLocked)]
+fun test_withdraw_before_unlock(){
+    let publisher = @0x11;
+    let bob = @0xB;
+
+    let mut scenario = test_scenario::begin(publisher);
+    {
+        let otw = JELO{};
+        init(otw, scenario.ctx());
+    };
+
+    scenario.next_tx(publisher);
+    {
+        let mut mint_cap = scenario.take_from_sender<MintCapability>();
+        let duration = 5000;
+        let test_clock = clock::create_for_testing(scenario.ctx());
+
+
+        mint_locked(
+            &mut mint_cap,
+            100_000_000_000_000_000,
+            bob,
+            duration,
+            &test_clock,
+            scenario.ctx()
+        );
+
+        assert!(mint_cap.total_minted == TOTAL_SUPPLY, EInvalidAmount);
+        scenario.return_to_sender(mint_cap);
+        test_clock.destroy_for_testing();
+    };
+
+
+    scenario.next_tx(bob);
+    {
+        let locker = scenario.take_from_sender<Locker>();
+        let duration = 4000;
+        let mut test_clock = clock::create_for_testing(scenario.ctx());
+        test_clock.set_for_testing(duration);
+
+
+        withdraw_locked(locker, &test_clock, scenario.ctx());
+        // scenario.return_to_sender(locker);
+        test_clock.destroy_for_testing();
+    };
+
+
+    scenario.end();
+}
