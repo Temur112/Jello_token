@@ -11,7 +11,7 @@ module jelo_coin::jelo;
 use sui::coin::{Self, TreasuryCap};
 use sui::url::new_unsafe_from_bytes;
 use sui::balance::{Balance};
-use sui::clock::{Self, Clock};
+use sui::clock::{Clock};
 
 const EInvalidAmount: u64 = 0;
 const ESupplyExcided: u64 = 1;
@@ -151,6 +151,7 @@ fun mint_internal(
 
 #[test_only]
 use sui::test_scenario;
+use sui::clock;
 
 
 #[test]
